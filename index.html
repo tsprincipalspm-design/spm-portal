@@ -414,7 +414,7 @@ function k(key) { return 'sv3-'+S.prog+'-'+S.sem+'-'+key; }
 //  GOOGLE SHEETS BACKEND — real-time shared storage
 //  All data reads/writes go to Google Sheets via Apps Script
 // ═══════════════════════════════════════════════════════════
-var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7NuRpcepNQzDPpxKFfS0p44e1WNamatkn1I9sd05zrEQjKOXh8vhgbyNcPb"; // ← Paste your Web App URL here
+var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx_kBF9DAVJRqJaBHzrnV6I45U7Ov6i-KXToavpXzQjxolIjOoCmGTD0KuvCSZ62EK8Fg/exec"; // ← Paste your Web App URL here
 
 // In-memory cache so the UI feels fast
 var _cache = {
@@ -434,7 +434,7 @@ function loadFromSheets(callback) {
 
   showLoadingBar(true);
   var url = SCRIPT_URL + "?action=read&prog=" + encodeURIComponent(S.prog) + "&sem=" + encodeURIComponent(String(S.sem));
-  fetch(url, {method:"GET", redirect:"follow"})
+  fetch(url, {method:"GET", redirect:"follow", credentials:"omit"})
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(data.ok){
@@ -477,7 +477,10 @@ function saveToSheets(type, record, sem) {
     record: record
   }));
   var url = SCRIPT_URL + "?payload=" + payload;
-  fetch(url, {method:"GET", mode:"no-cors"})
+  fetch(url, {method:"GET", mode:"no-cors", credentials:"omit"})
+    .then(function(){
+      console.log("Save sent to Sheets");
+    })
     .catch(function(err){
       console.error("Save error:", err);
     });
@@ -693,8 +696,10 @@ function buildApp(){
 function showPg(id){
   document.querySelectorAll('.ntab').forEach(function(t){t.classList.remove('active');});
   var tb=document.getElementById('ntab-'+id); if(tb)tb.classList.add('active');
-  // Show skeleton while loading
-  document.getElementById('main').innerHTML='<div style="text-align:center;padding:3rem;color:var(--ink3)"><div class="live-dot" style="margin:0 auto 1rem"></div>Loading...</div>';
+  // Always reload fresh data from Sheets on every tab click
+  _loaded=false;
+  _loading=false;
+  document.getElementById('main').innerHTML='<div style="text-align:center;padding:3rem;color:var(--ink3)"><div class="live-dot" style="margin:0 auto 1rem"></div>Loading live data...</div>';
   loadFromSheets(function(){
     document.getElementById('main').innerHTML=renderPage(id);
     afterRender(id);
